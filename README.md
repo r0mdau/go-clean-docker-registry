@@ -14,8 +14,9 @@ File `src/main.go` is the entrypoint of the program.
 Multiple flags are settable, mandatory are image name and registry api url.
 All flags have a shortcut alias.
 
-Two main commands :
-- show : show all tags associated with image
+Three commands :
+- showimages : show all images in the registry
+- showtags : show all tags associated with image
 - delete : delete all tags according to provided flags to the program
 
 ### Use it
