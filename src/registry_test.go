@@ -93,7 +93,7 @@ func TestRegistry(t *testing.T) {
 		})
 
 		api := Registry{client, url}
-		body := api.getApi("/some/path")
+		body := api.getTagsList("/some/path")
 		equals(t, []byte("OK"), body.Body)
 	})
 }

@@ -46,7 +46,7 @@ func (r *Registry) configure(url string, insecure bool) {
 	r.BaseUrl = url
 }
 
-func (r Registry) getApi(path string) RegistryResponse {
+func (r Registry) getTagsList(path string) RegistryResponse {
 	resp, err := r.Client.Get(r.BaseUrl + path)
 	if err != nil {
 		panic(err)
@@ -58,4 +58,14 @@ func (r Registry) getApi(path string) RegistryResponse {
 		resp.Header,
 	}
 	return registryResponse
+}
+
+func (r Registry) getCatalog(path string) []byte {
+	resp, err := r.Client.Get(r.BaseUrl + path)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	return body
 }

@@ -20,9 +20,15 @@ Two main commands :
 
 ### Use it
 
-To use this project you can simply use `go run`, here we show all tags associated with image :
+To use this project you can simply use `go run` or launch the binary.
 
-    go run main.go cmd.go registry.go -u https://private.registry.com -i r0mdau/nodejs show
+Show all images in registry :
+
+    go run main.go cmd.go registry.go showimages -u https://registry.docker.example.com
+
+Show all tags of specified image :
+
+    go run main.go cmd.go registry.go showtags -u https://registry.docker.example.com -i r0mdau/nodejs
 
 ### Build
 Command `make` to build amd64 binary.
