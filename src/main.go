@@ -9,7 +9,7 @@ func main() {
 	app := initCmdApp()
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatal(err, "---------------------toto")
+		log.Fatal(err)
 		os.Exit(1)
 	}
 }
