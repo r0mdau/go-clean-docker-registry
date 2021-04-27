@@ -1,6 +1,8 @@
 go-clean-docker-registry
 ========================
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/r0mdau/go-clean-docker-registry)](https://goreportcard.com/report/github.com/r0mdau/go-clean-docker-registry)
+
 Super simple cli tool written in Go to clean your v2 docker registry.
 
 (!) NOW only showimages and showtags are developed. Delete is in progress. See todolist below.
