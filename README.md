@@ -3,6 +3,8 @@ go-clean-docker-registry
 
 Super simple cli tool written in Go to clean your v2 docker registry.
 
+(!) NOW only showimages and showtags are developed. Delete is in progress. See todolist below.
+
 File `src/main.go` is the entrypoint of the program.
 
 ## Prerequisites
@@ -11,7 +13,7 @@ File `src/main.go` is the entrypoint of the program.
 
 ## Quick start
 
-Multiple flags are settable, mandatory are image name and registry api url.
+Multiple flags are settable, some are mandatory, help menu will help you.
 All flags have a shortcut alias.
 
 Three commands :
@@ -46,10 +48,11 @@ make uninstall
 
 ## TODO
 - [ ] Makefile
-- [ ] Readme
 - [ ] Load flags using a yaml config file
-- [ ] Logic for cli flags
-- [ ] get tags from registry
-- [ ] if dryrun output tags to be deleted
-- [ ] else delete docker images:tag
+- [x] Logic for cli flags
+- [x] get images from registry
+- [x] get tags from registry
+- [ ] DELETE action, if dryrun output tags to be deleted
+- [ ] DELETE action, else delete docker images:tag
 - [ ] docker hub api authent (JWT) : https://hub.docker.com/support/doc/how-do-i-authenticate-with-the-v2-api
+- [ ] folder structure with go packages ?
