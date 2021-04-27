@@ -1,8 +1,9 @@
-package main
+package registry
 
 import (
 	"bytes"
 	"crypto/tls"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -23,32 +24,32 @@ func NewTestClient(fn RoundTripFunc) *http.Client {
 const url = "https://example.com"
 
 func TestRegistryImage(t *testing.T) {
-	t.Run("GetRegistryImage from RegistryResponse should return RegistryImage", func(t *testing.T) {
-		rResponse := RegistryResponse{
+	t.Run("GetImage from Response should return Image", func(t *testing.T) {
+		rResponse := Response{
 			[]byte("{\"name\":\"test\", \"tags\":[\"master-6.0.1\",\"master-6.1.0\"]}"),
 			http.Header{},
 		}
-		gotRegistryImage := rResponse.getRegistryImage()
-		expectedRegistryImage := RegistryImage{
+		actualImage := rResponse.GetImage()
+		expectedImage := Image{
 			"test",
 			[]string{"master-6.0.1", "master-6.1.0"},
 		}
 
-		expect(t, gotRegistryImage, expectedRegistryImage)
+		require.Equal(t, expectedImage, actualImage)
 	})
 
-	t.Run("GetRegistryImage from RegistryResponse should return empty RegistryImage", func(t *testing.T) {
-		rResponse := RegistryResponse{
+	t.Run("GetImage from Response should return empty Image", func(t *testing.T) {
+		rResponse := Response{
 			[]byte("{}"),
 			http.Header{},
 		}
-		gotRegistryImage := rResponse.getRegistryImage()
-		expectedRegistryImage := RegistryImage{
+		actualImage := rResponse.GetImage()
+		expectedImage := Image{
 			"",
 			[]string(nil),
 		}
 
-		expect(t, gotRegistryImage, expectedRegistryImage)
+		require.Equal(t, expectedImage, actualImage)
 	})
 }
 
@@ -59,9 +60,9 @@ func TestRegistry(t *testing.T) {
 			client,
 			url,
 		}
-		gotRegistry := Registry{}
-		gotRegistry.configure(url, false)
-		expect(t, gotRegistry, expectedRegistry)
+		actualRegistry := Registry{}
+		actualRegistry.Configure(url, false)
+		require.Equal(t, expectedRegistry, actualRegistry)
 	})
 
 	t.Run("Configure Registry insecure configuration", func(t *testing.T) {
@@ -76,14 +77,14 @@ func TestRegistry(t *testing.T) {
 			client,
 			url,
 		}
-		gotRegistry := Registry{}
-		gotRegistry.configure(url, true)
-		expect(t, gotRegistry, expectedRegistry)
+		actualRegistry := Registry{}
+		actualRegistry.Configure(url, true)
+		require.Equal(t, expectedRegistry, actualRegistry)
 	})
 
 	t.Run("GetCatalog API with roundtripper should return OK", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
-			expect(t, req.URL.String(), url+"/some/path")
+			require.Equal(t, req.URL.String(), url+"/some/path")
 
 			return &http.Response{
 				StatusCode: 200,
@@ -93,13 +94,13 @@ func TestRegistry(t *testing.T) {
 		})
 
 		api := Registry{client, url}
-		body := api.getCatalog("/some/path")
-		expect(t, body, []byte("OK"))
+		body := api.GetCatalog("/some/path")
+		require.Equal(t, []byte("OK"), body)
 	})
 
 	t.Run("GetTagsList API with roundtripper should return OK", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
-			expect(t, req.URL.String(), url+"/some/path")
+			require.Equal(t, req.URL.String(), url+"/some/path")
 
 			return &http.Response{
 				StatusCode: 200,
@@ -109,7 +110,7 @@ func TestRegistry(t *testing.T) {
 		})
 
 		api := Registry{client, url}
-		body := api.getTagsList("/some/path")
-		expect(t, body.Body, []byte("OK"))
+		body := api.GetTagsList("/some/path")
+		require.Equal(t, []byte("OK"), body.Body)
 	})
 }

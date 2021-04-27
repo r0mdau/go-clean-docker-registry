@@ -55,4 +55,4 @@ make uninstall
 - [ ] DELETE action, if dryrun output tags to be deleted
 - [ ] DELETE action, else delete docker images:tag
 - [ ] docker hub api authent (JWT) : https://hub.docker.com/support/doc/how-do-i-authenticate-with-the-v2-api
-- [ ] folder structure with go packages ?
+- [x] folder structure with go packages

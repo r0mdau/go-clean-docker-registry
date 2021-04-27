@@ -1,11 +1,13 @@
-package main
+package cmd
 
 import (
+	"fmt"
+	"github.com/r0mdau/go-clean-docker-registry/pkg/registry"
 	"github.com/urfave/cli/v2"
 	"time"
 )
 
-func initCmdApp() *cli.App {
+func CreateApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = "Go Clean Docker Registry"
 	app.Version = "0.1.0"
@@ -38,7 +40,7 @@ func initCmdApp() *cli.App {
 	}
 	dryrunFlag := &cli.BoolFlag{
 		Name:  "dryrun",
-		Usage: "Dry initCmdApp only print future actions",
+		Usage: "Dry CreateApp only print future actions",
 	}
 	insecureFlag := &cli.BoolFlag{
 		Name:  "insecure",
@@ -80,4 +82,40 @@ func initCmdApp() *cli.App {
 	}
 
 	return app
+}
+
+func configureRegistry(c *cli.Context) registry.Registry {
+	registry := registry.Registry{}
+	registry.Configure(c.String("url"), c.Bool("insecure"))
+	return registry
+}
+
+func printRegistryCatalog(c *cli.Context) error {
+	registry := configureRegistry(c)
+	catalog := registry.GetCatalog("/v2/_catalog")
+
+	fmt.Println(string(catalog))
+	return nil
+}
+
+func printRegistryTags(c *cli.Context) error {
+	registry := configureRegistry(c)
+	registryResponse := registry.GetTagsList("/v2/" + c.String("image") + "/tags/list")
+
+	fmt.Println(string(registryResponse.Body))
+	fmt.Println("Total of", len(registryResponse.GetImage().Tags), "tags.")
+	return nil
+}
+
+func deleteRegistryTags(c *cli.Context) error {
+	registry := configureRegistry(c)
+	registryResponse := registry.GetTagsList("/v2/" + c.String("image") + "/tags/list")
+
+	fmt.Println("Total of", len(registryResponse.GetImage().Tags), "tags.")
+	for _, value := range registryResponse.GetImage().Tags {
+		if c.Bool("dryrun") {
+			fmt.Println("Deleting :", value)
+		}
+	}
+	return nil
 }

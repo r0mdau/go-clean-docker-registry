@@ -1,6 +1,9 @@
-package main
+package cmd
 
 import (
+	"flag"
+	"github.com/r0mdau/go-clean-docker-registry/pkg/registry"
+	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 	"io/ioutil"
 	"testing"
@@ -9,8 +12,8 @@ import (
 func TestInitCmdAppConfiguration(t *testing.T) {
 	t.Run("Configuration values", func(t *testing.T) {
 		app := newTestApp()
-		expect(t, app.Name, "Go Clean Docker Registry")
-		expect(t, app.EnableBashCompletion, true)
+		require.Equal(t, "Go Clean Docker Registry", app.Name)
+		require.Equal(t, true, app.EnableBashCompletion)
 	})
 }
 
@@ -29,9 +32,9 @@ func TestCommandShowimagesAppValues(t *testing.T) {
 
 		err := app.Run([]string{"", "showimages", "--url", "https://example.com"})
 
-		expect(t, registyUrl, "https://example.com")
-		expect(t, insecure, false)
-		assertNoError(t, err)
+		require.Equal(t, "https://example.com", registyUrl)
+		require.Equal(t, false, insecure)
+		require.NoError(t, err)
 	})
 
 	t.Run("Showimages test flags insecure", func(t *testing.T) {
@@ -44,9 +47,9 @@ func TestCommandShowimagesAppValues(t *testing.T) {
 
 		err := app.Run([]string{"", "showimages", "--url", "https://example.com", "--insecure"})
 
-		expect(t, registyUrl, "https://example.com")
-		expect(t, insecure, true)
-		assertNoError(t, err)
+		require.Equal(t, "https://example.com", registyUrl)
+		require.Equal(t, true, insecure)
+		require.NoError(t, err)
 	})
 }
 
@@ -64,9 +67,9 @@ func TestCommandShowtagsAppValues(t *testing.T) {
 
 		err := app.Run([]string{"", "showtags", "--url", "https://example.com", "--image", "test"})
 
-		expect(t, registyUrl, "https://example.com")
-		expect(t, image, "test")
-		assertNoError(t, err)
+		require.Equal(t, "https://example.com", registyUrl)
+		require.Equal(t, "test", image)
+		require.NoError(t, err)
 	})
 	t.Run("Showtags test maximum flags", func(t *testing.T) {
 		app := newTestApp()
@@ -79,10 +82,10 @@ func TestCommandShowtagsAppValues(t *testing.T) {
 
 		err := app.Run([]string{"", "showtags", "--url", "https://example.com", "--image", "test", "--insecure"})
 
-		expect(t, registyUrl, "https://example.com")
-		expect(t, image, "test")
-		expect(t, insecure, true)
-		assertNoError(t, err)
+		require.Equal(t, "https://example.com", registyUrl)
+		require.Equal(t, "test", image)
+		require.Equal(t, true, insecure)
+		require.NoError(t, err)
 	})
 }
 
@@ -255,8 +258,36 @@ func assertAppBehaviour(t *testing.T, tdata []struct {
 	}
 }
 
+func TestConfigureRegistry(t *testing.T) {
+	t.Run("TODO Cannot set cli.flagSet so configure registry return empty registry", func(t *testing.T) {
+		app := &cli.App{Writer: ioutil.Discard}
+		set := flag.NewFlagSet("test", 0)
+		testArgs := []string{"", "showimages", "--url", "https://example.com"}
+		set.Parse(testArgs)
+		context := cli.NewContext(app, set, nil)
+
+		command := cli.Command{
+			Name:            "showimages",
+			Usage:           "this is for testing",
+			Description:     "testing",
+			Action:          func(_ *cli.Context) error { return nil },
+			SkipFlagParsing: true,
+		}
+
+		command.Run(context)
+
+		actualRegistry := configureRegistry(context)
+
+		expectedRegistry := registry.Registry{}
+		expectedRegistry.Configure("", false)
+
+		require.Equal(t, expectedRegistry.BaseUrl, actualRegistry.BaseUrl)
+		require.Equal(t, "todo", "todo")
+	})
+}
+
 func newTestApp() *cli.App {
-	app := initCmdApp()
+	app := CreateApp()
 	for _, command := range app.Commands {
 		command.Action = func(c *cli.Context) error {
 			return nil

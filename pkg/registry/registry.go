@@ -1,4 +1,4 @@
-package main
+package registry
 
 import (
 	"crypto/tls"
@@ -8,18 +8,18 @@ import (
 	"net/http"
 )
 
-type RegistryImage struct {
+type Image struct {
 	Name string   `json:"name"`
 	Tags []string `json:"tags"`
 }
 
-type RegistryResponse struct {
+type Response struct {
 	Body   []byte
 	Header http.Header
 }
 
-func (r RegistryResponse) getRegistryImage() RegistryImage {
-	var registryImage RegistryImage
+func (r Response) GetImage() Image {
+	var registryImage Image
 	err := json.Unmarshal(r.Body, &registryImage)
 	if err != nil {
 		fmt.Printf("- Can't deserislize tree, error: %v\n", err)
@@ -32,7 +32,7 @@ type Registry struct {
 	BaseUrl string
 }
 
-func (r *Registry) configure(url string, insecure bool) {
+func (r *Registry) Configure(url string, insecure bool) {
 	client := &http.Client{}
 	if insecure {
 		transport := &http.Transport{
@@ -46,21 +46,21 @@ func (r *Registry) configure(url string, insecure bool) {
 	r.BaseUrl = url
 }
 
-func (r Registry) getTagsList(path string) RegistryResponse {
+func (r Registry) GetTagsList(path string) Response {
 	resp, err := r.Client.Get(r.BaseUrl + path)
 	if err != nil {
 		panic(err)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-	registryResponse := RegistryResponse{
+	registryResponse := Response{
 		body,
 		resp.Header,
 	}
 	return registryResponse
 }
 
-func (r Registry) getCatalog(path string) []byte {
+func (r Registry) GetCatalog(path string) []byte {
 	resp, err := r.Client.Get(r.BaseUrl + path)
 	if err != nil {
 		panic(err)
