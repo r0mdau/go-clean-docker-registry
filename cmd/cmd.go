@@ -9,7 +9,7 @@ import (
 
 func CreateApp() *cli.App {
 	app := cli.NewApp()
-	app.Name = "clean-docker-registry"
+	app.Name = "go-clean-docker-registry"
 	app.Version = "0.1.0"
 	app.Compiled = time.Now()
 	app.EnableBashCompletion = true

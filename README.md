@@ -28,6 +28,8 @@ To use this project you can simply use `go run` or launch the binary.
 Show all images in registry :
 
     go run main.go showimages -u https://registry.docker.example.com
+    # or
+    ./go-clean-docker-registry showimages -u https://registry.docker.example.com
 
 Show all tags of specified image :
 
@@ -37,6 +39,8 @@ Show all tags of specified image :
 Command `make` to build amd64 binary.
 ```
 make
+# build with docker
+make build-docker
 ```
 
 ### (Un)Install
@@ -47,7 +51,7 @@ make uninstall
 ```
 
 ## TODO
-- [ ] Makefile
+- [x] Makefile
 - [ ] Load flags using a yaml config file
 - [x] Logic for cli flags
 - [x] get images from registry

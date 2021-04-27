@@ -12,7 +12,7 @@ import (
 func TestInitCmdAppConfiguration(t *testing.T) {
 	t.Run("Configuration values", func(t *testing.T) {
 		app := newTestApp()
-		require.Equal(t, "Go Clean Docker Registry", app.Name)
+		require.Equal(t, "go-clean-docker-registry", app.Name)
 		require.Equal(t, true, app.EnableBashCompletion)
 	})
 }
