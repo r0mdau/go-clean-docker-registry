@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/urfave/cli/v2"
 	"time"
 )
@@ -48,32 +47,17 @@ func initCmdApp() *cli.App {
 
 	app.Commands = []*cli.Command{
 		{
-			Name:  "showimages",
-			Usage: "Show all images from your registry",
-			Action: func(c *cli.Context) error {
-				registry := Registry{}
-				registry.configure(c.String("url"), c.Bool("insecure"))
-				catalog := registry.getCatalog("/v2/_catalog")
-
-				fmt.Println(string(catalog))
-				return nil
-			},
+			Name:   "showimages",
+			Usage:  "Show all images from your registry",
+			Action: printRegistryCatalog,
 			Flags: []cli.Flag{
 				urlFlag,
 				insecureFlag,
 			},
 		}, {
-			Name:  "showtags",
-			Usage: "Show all tags for your image",
-			Action: func(c *cli.Context) error {
-				registry := Registry{}
-				registry.configure(c.String("url"), c.Bool("insecure"))
-				registryResponse := registry.getTagsList("/v2/" + c.String("image") + "/tags/list")
-
-				fmt.Println(string(registryResponse.Body))
-				fmt.Println("Total of", len(registryResponse.getRegistryImage().Tags), "tags.")
-				return nil
-			},
+			Name:   "showtags",
+			Usage:  "Show all tags for your image",
+			Action: printRegistryTags,
 			Flags: []cli.Flag{
 				urlFlag,
 				imageFlag,
@@ -81,12 +65,9 @@ func initCmdApp() *cli.App {
 			},
 		},
 		{
-			Name:  "delete",
-			Usage: "Delete all specified tags for your image",
-			Action: func(c *cli.Context) error {
-				//todo
-				return nil
-			},
+			Name:   "delete",
+			Usage:  "Delete all specified tags for your image",
+			Action: deleteRegistryTags,
 			Flags: []cli.Flag{
 				urlFlag,
 				imageFlag,

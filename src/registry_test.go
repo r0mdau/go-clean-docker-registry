@@ -34,7 +34,7 @@ func TestRegistryImage(t *testing.T) {
 			[]string{"master-6.0.1", "master-6.1.0"},
 		}
 
-		equals(t, expectedRegistryImage, gotRegistryImage)
+		expect(t, gotRegistryImage, expectedRegistryImage)
 	})
 
 	t.Run("GetRegistryImage from RegistryResponse should return empty RegistryImage", func(t *testing.T) {
@@ -48,7 +48,7 @@ func TestRegistryImage(t *testing.T) {
 			[]string(nil),
 		}
 
-		equals(t, expectedRegistryImage, gotRegistryImage)
+		expect(t, gotRegistryImage, expectedRegistryImage)
 	})
 }
 
@@ -61,7 +61,7 @@ func TestRegistry(t *testing.T) {
 		}
 		gotRegistry := Registry{}
 		gotRegistry.configure(url, false)
-		equals(t, expectedRegistry, gotRegistry)
+		expect(t, gotRegistry, expectedRegistry)
 	})
 
 	t.Run("Configure Registry insecure configuration", func(t *testing.T) {
@@ -78,12 +78,28 @@ func TestRegistry(t *testing.T) {
 		}
 		gotRegistry := Registry{}
 		gotRegistry.configure(url, true)
-		equals(t, expectedRegistry, gotRegistry)
+		expect(t, gotRegistry, expectedRegistry)
 	})
 
-	t.Run("Get API with roundtripper should return OK", func(t *testing.T) {
+	t.Run("GetCatalog API with roundtripper should return OK", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
-			equals(t, req.URL.String(), url+"/some/path")
+			expect(t, req.URL.String(), url+"/some/path")
+
+			return &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
+				Header:     make(http.Header),
+			}
+		})
+
+		api := Registry{client, url}
+		body := api.getCatalog("/some/path")
+		expect(t, body, []byte("OK"))
+	})
+
+	t.Run("GetTagsList API with roundtripper should return OK", func(t *testing.T) {
+		client := NewTestClient(func(req *http.Request) *http.Response {
+			expect(t, req.URL.String(), url+"/some/path")
 
 			return &http.Response{
 				StatusCode: 200,
@@ -94,6 +110,6 @@ func TestRegistry(t *testing.T) {
 
 		api := Registry{client, url}
 		body := api.getTagsList("/some/path")
-		equals(t, []byte("OK"), body.Body)
+		expect(t, body.Body, []byte("OK"))
 	})
 }
