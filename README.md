@@ -7,7 +7,7 @@ Super simple cli tool written in Go to clean your v2 docker registry.
 
 (!) NOW only showimages and showtags are developed. Delete is in progress. See todolist below.
 
-File `src/main.go` is the entrypoint of the program.
+File `main.go` is the entrypoint of the program.
 
 ## Prerequisites
 - go
