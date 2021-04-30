@@ -3,9 +3,11 @@ package registry
 import (
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 )
 
 type Image struct {
@@ -46,26 +48,46 @@ func (r *Registry) Configure(url string, insecure bool) {
 	r.BaseUrl = url
 }
 
-func (r Registry) GetTagsList(path string) Response {
-	resp, err := r.Client.Get(r.BaseUrl + path)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	registryResponse := Response{
-		body,
-		resp.Header,
-	}
-	return registryResponse
+func (r Registry) GetCatalog() ([]byte, error) {
+	response, err := r.Client.Get(r.BaseUrl + "/v2/_catalog?n=5000")
+	defer response.Body.Close()
+	body, _ := ioutil.ReadAll(response.Body)
+	return body, err
 }
 
-func (r Registry) GetCatalog(path string) []byte {
-	resp, err := r.Client.Get(r.BaseUrl + path)
-	if err != nil {
-		panic(err)
+func (r Registry) GetTagsList(image string) (Response, error) {
+	response, err := r.Client.Get(r.BaseUrl + "/v2/" + image + "/tags/list")
+	defer response.Body.Close()
+	body, _ := ioutil.ReadAll(response.Body)
+	registryResponse := Response{
+		body,
+		response.Header,
 	}
-	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
-	return body
+	return registryResponse, err
+}
+
+func (r *Registry) DeleteImageTag(image string, tag string) error {
+	response, dcgHeader, err := r.getImageSha256Sum(image, tag)
+	if err != nil {
+		return err
+	} else if response.StatusCode == 200 {
+		request, _ := http.NewRequest("DELETE", r.BaseUrl+"/v2/"+image+"/manifests/"+dcgHeader, nil)
+		res, _ := r.Client.Do(request)
+		defer res.Body.Close()
+		if res.StatusCode != 202 {
+			return errors.New("Error while deleting image:tag : " + image + ":" + tag + " HTTP code " + strconv.Itoa(res.StatusCode))
+		}
+	} else {
+		return errors.New("Error while fetching image:tag" + image + ":" + tag + " HTTP code " + strconv.Itoa(response.StatusCode))
+	}
+	return nil
+}
+
+func (r *Registry) getImageSha256Sum(image string, tag string) (*http.Response, string, error) {
+	request, _ := http.NewRequest("GET", r.BaseUrl+"/v2/"+image+"/manifests/"+tag, nil)
+	request.Header.Set("Accept", "application/vnd.docker.distribution.manifest.v2+json")
+	response, err := r.Client.Do(request)
+	dcgHeader := response.Header.Get("Docker-Content-Digest")
+	defer response.Body.Close()
+	return response, dcgHeader, err
 }

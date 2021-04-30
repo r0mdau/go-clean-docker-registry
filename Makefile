@@ -1,4 +1,4 @@
-.PHONY: build build-docker test install uninstall
+.PHONY: build build-docker test fmt install uninstall
 
 default: build
 
@@ -19,6 +19,9 @@ build-docker:
 
 test:
 	go test -v -cover ./...
+
+fmt:
+	go fmt ./...
 
 install:
 	chmod 755 build/$(BINARY)

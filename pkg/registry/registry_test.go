@@ -84,7 +84,7 @@ func TestRegistry(t *testing.T) {
 
 	t.Run("GetCatalog API with roundtripper should return OK", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
-			require.Equal(t, req.URL.String(), url+"/some/path")
+			require.Equal(t, req.URL.String(), url+"/v2/_catalog?n=5000")
 
 			return &http.Response{
 				StatusCode: 200,
@@ -94,13 +94,14 @@ func TestRegistry(t *testing.T) {
 		})
 
 		api := Registry{client, url}
-		body := api.GetCatalog("/some/path")
+		body, err := api.GetCatalog()
 		require.Equal(t, []byte("OK"), body)
+		require.Nil(t, err)
 	})
 
 	t.Run("GetTagsList API with roundtripper should return OK", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
-			require.Equal(t, req.URL.String(), url+"/some/path")
+			require.Equal(t, req.URL.String(), url+"/v2/image/tags/list")
 
 			return &http.Response{
 				StatusCode: 200,
@@ -110,7 +111,24 @@ func TestRegistry(t *testing.T) {
 		})
 
 		api := Registry{client, url}
-		body := api.GetTagsList("/some/path")
+		body, err := api.GetTagsList("image")
 		require.Equal(t, []byte("OK"), body.Body)
+		require.Nil(t, err)
 	})
+
+	/*	t.Run("DeleteImageTag API with roundtripper should return OK", func(t *testing.T) {
+		client := NewTestClient(func(req *http.Request) *http.Response {
+			require.Equal(t, req.URL.String(), url+"/v2/image/manifests/1.0.0")
+
+			return &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
+				Header:     make(http.Header),
+			}
+		})
+
+		api := Registry{client, url}
+		err := api.DeleteImageTag("image", "1.0.0")
+		require.Nil(t, err)
+	})*/
 }

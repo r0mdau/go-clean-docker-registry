@@ -2,8 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/korovkin/limiter"
+	"github.com/r0mdau/go-clean-docker-registry/internal/filter"
 	"github.com/r0mdau/go-clean-docker-registry/pkg/registry"
 	"github.com/urfave/cli/v2"
+	"os"
 	"time"
 )
 
@@ -92,7 +95,11 @@ func configureRegistry(c *cli.Context) registry.Registry {
 
 func printRegistryCatalog(c *cli.Context) error {
 	registry := configureRegistry(c)
-	catalog := registry.GetCatalog("/v2/_catalog")
+	catalog, err := registry.GetCatalog()
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 
 	fmt.Println(string(catalog))
 	return nil
@@ -100,7 +107,11 @@ func printRegistryCatalog(c *cli.Context) error {
 
 func printRegistryTags(c *cli.Context) error {
 	registry := configureRegistry(c)
-	registryResponse := registry.GetTagsList("/v2/" + c.String("image") + "/tags/list")
+	registryResponse, err := registry.GetTagsList(c.String("image"))
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 
 	fmt.Println(string(registryResponse.Body))
 	fmt.Println("Total of", len(registryResponse.GetImage().Tags), "tags.")
@@ -109,13 +120,42 @@ func printRegistryTags(c *cli.Context) error {
 
 func deleteRegistryTags(c *cli.Context) error {
 	registry := configureRegistry(c)
-	registryResponse := registry.GetTagsList("/v2/" + c.String("image") + "/tags/list")
+	imageName := c.String("image")
+	tag := c.String("tag")
+	dryrun := c.Bool("dryrun")
 
-	fmt.Println("Total of", len(registryResponse.GetImage().Tags), "tags.")
-	for _, value := range registryResponse.GetImage().Tags {
-		if c.Bool("dryrun") {
-			fmt.Println("Deleting :", value)
-		}
+	registryResponse, err := registry.GetTagsList(imageName)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
+
+	var imageTagsToDelete []string
+	if tag != "" {
+		imageTagsToDelete, err = filter.MatchAndSortImageTags(registryResponse.GetImage().Tags, tag)
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+		imageTagsToDelete = imageTagsToDelete[:len(imageTagsToDelete)-c.Int("keep")]
+	} else {
+		imageTagsToDelete = registryResponse.GetImage().Tags
+	}
+
+	if dryrun {
+		fmt.Println("Dryrun, it should delete image : \""+imageName+"\" with tags :", imageTagsToDelete)
+	} else {
+		limit := limiter.NewConcurrencyLimiter(10)
+		for _, imageTagToDelete := range imageTagsToDelete {
+			limit.Execute(func() {
+				err := registry.DeleteImageTag(imageName, imageTagToDelete)
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+			})
+		}
+		limit.Wait()
+	}
+	fmt.Println("Total of", len(imageTagsToDelete), "tags deleted.")
 	return nil
 }
