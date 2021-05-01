@@ -51,14 +51,14 @@ func (r *Registry) Configure(url string, insecure bool) {
 func (r Registry) GetCatalog() ([]byte, error) {
 	response, err := r.Client.Get(r.BaseUrl + "/v2/_catalog?n=5000")
 	defer response.Body.Close()
-	body, _ := ioutil.ReadAll(response.Body)
+	body, err := ioutil.ReadAll(response.Body)
 	return body, err
 }
 
 func (r Registry) GetTagsList(image string) (Response, error) {
 	response, err := r.Client.Get(r.BaseUrl + "/v2/" + image + "/tags/list")
 	defer response.Body.Close()
-	body, _ := ioutil.ReadAll(response.Body)
+	body, err := ioutil.ReadAll(response.Body)
 	registryResponse := Response{
 		body,
 		response.Header,
@@ -77,10 +77,10 @@ func (r *Registry) GetImageSha256Sum(image string, tag string) (*http.Response, 
 
 func (r *Registry) DeleteImageTag(image, tag, dcgHeader string) error {
 	request, _ := http.NewRequest("DELETE", r.BaseUrl+"/v2/"+image+"/manifests/"+dcgHeader, nil)
-	res, _ := r.Client.Do(request)
+	res, err := r.Client.Do(request)
 	defer res.Body.Close()
 	if res.StatusCode != 202 {
 		return errors.New("Error while deleting image:tag : " + image + ":" + tag + " HTTP code " + strconv.Itoa(res.StatusCode))
 	}
-	return nil
+	return err
 }
