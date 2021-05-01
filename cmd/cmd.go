@@ -7,6 +7,7 @@ import (
 	"github.com/r0mdau/go-clean-docker-registry/pkg/registry"
 	"github.com/urfave/cli/v2"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -148,9 +149,16 @@ func deleteRegistryTags(c *cli.Context) error {
 		limit := limiter.NewConcurrencyLimiter(10)
 		for _, imageTagToDelete := range imageTagsToDelete {
 			limit.Execute(func() {
-				err := registry.DeleteImageTag(imageName, imageTagToDelete)
+				response, dcgHeader, err := registry.GetImageSha256Sum(imageTagToDelete, tag)
 				if err != nil {
 					fmt.Println(err.Error())
+				} else if response.StatusCode == 200 {
+					err := registry.DeleteImageTag(imageName, imageTagToDelete, dcgHeader)
+					if err != nil {
+						fmt.Println(err.Error())
+					}
+				} else {
+					fmt.Println("Error while fetching image:tag" + imageTagToDelete + ":" + tag + " HTTP code " + strconv.Itoa(response.StatusCode))
 				}
 			})
 		}

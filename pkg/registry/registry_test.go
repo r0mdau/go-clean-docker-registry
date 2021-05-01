@@ -116,9 +116,45 @@ func TestRegistry(t *testing.T) {
 		require.Nil(t, err)
 	})
 
-	/*	t.Run("DeleteImageTag API with roundtripper should return OK", func(t *testing.T) {
+	t.Run("GetImageSha256Sum API with roundtripper should return image hash", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
-			require.Equal(t, req.URL.String(), url+"/v2/image/manifests/1.0.0")
+			require.Equal(t, req.URL.String(), url+"/v2/image/manifests/tag")
+
+			header := make(http.Header)
+			header.Add("Docker-Content-Digest", "sha256sum")
+			return &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
+				Header:     header,
+			}
+		})
+
+		api := Registry{client, url}
+		response, dcgHeader, err := api.GetImageSha256Sum("image", "tag")
+		require.Equal(t, 200, response.StatusCode)
+		require.Equal(t, "sha256sum", dcgHeader)
+		require.Nil(t, err)
+	})
+
+	t.Run("DeleteImageTag API with roundtripper should return no error", func(t *testing.T) {
+		client := NewTestClient(func(req *http.Request) *http.Response {
+			require.Equal(t, req.URL.String(), url+"/v2/image/manifests/sha256sum")
+
+			return &http.Response{
+				StatusCode: 202,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
+				Header:     make(http.Header),
+			}
+		})
+
+		api := Registry{client, url}
+		err := api.DeleteImageTag("image", "tag", "sha256sum")
+		require.NoError(t, err)
+	})
+
+	t.Run("DeleteImageTag API with roundtripper should return error if StatusCode != 202", func(t *testing.T) {
+		client := NewTestClient(func(req *http.Request) *http.Response {
+			require.Equal(t, req.URL.String(), url+"/v2/image/manifests/sha256sum")
 
 			return &http.Response{
 				StatusCode: 200,
@@ -128,7 +164,7 @@ func TestRegistry(t *testing.T) {
 		})
 
 		api := Registry{client, url}
-		err := api.DeleteImageTag("image", "1.0.0")
-		require.Nil(t, err)
-	})*/
+		err := api.DeleteImageTag("image", "tag", "sha256sum")
+		require.Error(t, err)
+	})
 }

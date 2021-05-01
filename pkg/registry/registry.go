@@ -66,28 +66,21 @@ func (r Registry) GetTagsList(image string) (Response, error) {
 	return registryResponse, err
 }
 
-func (r *Registry) DeleteImageTag(image string, tag string) error {
-	response, dcgHeader, err := r.getImageSha256Sum(image, tag)
-	if err != nil {
-		return err
-	} else if response.StatusCode == 200 {
-		request, _ := http.NewRequest("DELETE", r.BaseUrl+"/v2/"+image+"/manifests/"+dcgHeader, nil)
-		res, _ := r.Client.Do(request)
-		defer res.Body.Close()
-		if res.StatusCode != 202 {
-			return errors.New("Error while deleting image:tag : " + image + ":" + tag + " HTTP code " + strconv.Itoa(res.StatusCode))
-		}
-	} else {
-		return errors.New("Error while fetching image:tag" + image + ":" + tag + " HTTP code " + strconv.Itoa(response.StatusCode))
-	}
-	return nil
-}
-
-func (r *Registry) getImageSha256Sum(image string, tag string) (*http.Response, string, error) {
+func (r *Registry) GetImageSha256Sum(image string, tag string) (*http.Response, string, error) {
 	request, _ := http.NewRequest("GET", r.BaseUrl+"/v2/"+image+"/manifests/"+tag, nil)
 	request.Header.Set("Accept", "application/vnd.docker.distribution.manifest.v2+json")
 	response, err := r.Client.Do(request)
 	dcgHeader := response.Header.Get("Docker-Content-Digest")
 	defer response.Body.Close()
 	return response, dcgHeader, err
+}
+
+func (r *Registry) DeleteImageTag(image, tag, dcgHeader string) error {
+	request, _ := http.NewRequest("DELETE", r.BaseUrl+"/v2/"+image+"/manifests/"+dcgHeader, nil)
+	res, _ := r.Client.Do(request)
+	defer res.Body.Close()
+	if res.StatusCode != 202 {
+		return errors.New("Error while deleting image:tag : " + image + ":" + tag + " HTTP code " + strconv.Itoa(res.StatusCode))
+	}
+	return nil
 }
