@@ -44,7 +44,7 @@ func CreateApp() *cli.App {
 	}
 	dryrunFlag := &cli.BoolFlag{
 		Name:  "dryrun",
-		Usage: "Dry CreateApp only print future actions",
+		Usage: "Dryrun only print future delete actions",
 	}
 	insecureFlag := &cli.BoolFlag{
 		Name:  "insecure",
@@ -55,7 +55,7 @@ func CreateApp() *cli.App {
 		{
 			Name:   "showimages",
 			Usage:  "Show all images from your registry",
-			Action: printRegistryCatalog,
+			Action: printRepositoriesList,
 			Flags: []cli.Flag{
 				urlFlag,
 				insecureFlag,
@@ -63,7 +63,7 @@ func CreateApp() *cli.App {
 		}, {
 			Name:   "showtags",
 			Usage:  "Show all tags for your image",
-			Action: printRegistryTags,
+			Action: printImageTagsList,
 			Flags: []cli.Flag{
 				urlFlag,
 				imageFlag,
@@ -73,7 +73,7 @@ func CreateApp() *cli.App {
 		{
 			Name:   "delete",
 			Usage:  "Delete all specified tags for your image",
-			Action: deleteRegistryTags,
+			Action: deleteImage,
 			Flags: []cli.Flag{
 				urlFlag,
 				imageFlag,
@@ -94,21 +94,21 @@ func configureRegistry(c *cli.Context) registry.Registry {
 	return registry
 }
 
-func printRegistryCatalog(c *cli.Context) error {
+func printRepositoriesList(c *cli.Context) error {
 	registry := configureRegistry(c)
-	catalog, err := registry.GetCatalog()
+	repositories, err := registry.ListRepositories()
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
-	fmt.Println(string(catalog))
+	fmt.Println(string(repositories))
 	return nil
 }
 
-func printRegistryTags(c *cli.Context) error {
+func printImageTagsList(c *cli.Context) error {
 	registry := configureRegistry(c)
-	registryResponse, err := registry.GetTagsList(c.String("image"))
+	registryResponse, err := registry.ListImageTags(c.String("image"))
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
@@ -119,51 +119,51 @@ func printRegistryTags(c *cli.Context) error {
 	return nil
 }
 
-func deleteRegistryTags(c *cli.Context) error {
+func deleteImage(c *cli.Context) error {
 	registry := configureRegistry(c)
-	imageName := c.String("image")
-	tag := c.String("tag")
+	cliImage := c.String("image")
+	cliTag := c.String("tag")
 	dryrun := c.Bool("dryrun")
 
-	registryResponse, err := registry.GetTagsList(imageName)
+	registryResponse, err := registry.ListImageTags(cliImage)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
-	var imageTagsToDelete []string
-	if tag != "" {
-		imageTagsToDelete, err = filter.MatchAndSortImageTags(registryResponse.GetImage().Tags, tag)
+	var tagsToDelete []string
+	if cliTag != "" {
+		tagsToDelete, err = filter.MatchAndSortImageTags(registryResponse.GetImage().Tags, cliTag)
 		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)
 		}
-		imageTagsToDelete = imageTagsToDelete[:len(imageTagsToDelete)-c.Int("keep")]
+		tagsToDelete = tagsToDelete[:len(tagsToDelete)-c.Int("keep")]
 	} else {
-		imageTagsToDelete = registryResponse.GetImage().Tags
+		tagsToDelete = registryResponse.GetImage().Tags
 	}
 
 	if dryrun {
-		fmt.Println("Dryrun, it should delete image : \""+imageName+"\" with tags :", imageTagsToDelete)
+		fmt.Println("Dryrun, it should delete image : \""+cliImage+"\" with tags :", tagsToDelete)
 	} else {
 		limit := limiter.NewConcurrencyLimiter(10)
-		for _, imageTagToDelete := range imageTagsToDelete {
+		for _, tagToDelete := range tagsToDelete {
 			limit.Execute(func() {
-				response, dcgHeader, err := registry.GetImageSha256Sum(imageTagToDelete, tag)
-				if err != nil {
-					fmt.Println(err.Error())
+				response, digest, errGet := registry.GetExistingManifest(cliImage, tagToDelete)
+				if errGet != nil {
+					fmt.Println(errGet.Error())
 				} else if response.StatusCode == 200 {
-					err := registry.DeleteImageTag(imageName, imageTagToDelete, dcgHeader)
-					if err != nil {
-						fmt.Println(err.Error())
+					errDel := registry.DeleteImage(cliImage, tagToDelete, digest)
+					if errDel != nil {
+						fmt.Println(errDel.Error())
 					}
 				} else {
-					fmt.Println("Error while fetching image:tag" + imageTagToDelete + ":" + tag + " HTTP code " + strconv.Itoa(response.StatusCode))
+					fmt.Println("Error while getting image manifest for: " + tagToDelete + ":" + cliTag + ", HTTP code " + strconv.Itoa(response.StatusCode))
 				}
 			})
 		}
 		limit.Wait()
 	}
-	fmt.Println("Total of", len(imageTagsToDelete), "tags deleted.")
+	fmt.Println("Total of", len(tagsToDelete), "tags deleted.")
 	return nil
 }

@@ -82,7 +82,7 @@ func TestRegistry(t *testing.T) {
 		require.Equal(t, expectedRegistry, actualRegistry)
 	})
 
-	t.Run("GetCatalog API with roundtripper should return OK", func(t *testing.T) {
+	t.Run("ListRepositories API with roundtripper should return OK", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
 			require.Equal(t, req.URL.String(), url+"/v2/_catalog?n=5000")
 
@@ -94,12 +94,12 @@ func TestRegistry(t *testing.T) {
 		})
 
 		api := Registry{client, url}
-		body, err := api.GetCatalog()
+		body, err := api.ListRepositories()
 		require.Equal(t, []byte("OK"), body)
 		require.Nil(t, err)
 	})
 
-	t.Run("GetTagsList API with roundtripper should return OK", func(t *testing.T) {
+	t.Run("ListImageTags API with roundtripper should return OK", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
 			require.Equal(t, req.URL.String(), url+"/v2/image/tags/list")
 
@@ -111,12 +111,12 @@ func TestRegistry(t *testing.T) {
 		})
 
 		api := Registry{client, url}
-		body, err := api.GetTagsList("image")
+		body, err := api.ListImageTags("image")
 		require.Equal(t, []byte("OK"), body.Body)
 		require.Nil(t, err)
 	})
 
-	t.Run("GetImageSha256Sum API with roundtripper should return image hash", func(t *testing.T) {
+	t.Run("GetExistingManifest API with roundtripper should return image hash", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
 			require.Equal(t, req.URL.String(), url+"/v2/image/manifests/tag")
 
@@ -130,13 +130,13 @@ func TestRegistry(t *testing.T) {
 		})
 
 		api := Registry{client, url}
-		response, dcgHeader, err := api.GetImageSha256Sum("image", "tag")
+		response, digest, err := api.GetExistingManifest("image", "tag")
 		require.Equal(t, 200, response.StatusCode)
-		require.Equal(t, "sha256sum", dcgHeader)
+		require.Equal(t, "sha256sum", digest)
 		require.Nil(t, err)
 	})
 
-	t.Run("DeleteImageTag API with roundtripper should return no error", func(t *testing.T) {
+	t.Run("DeleteImage API with roundtripper should return no error", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
 			require.Equal(t, req.URL.String(), url+"/v2/image/manifests/sha256sum")
 
@@ -148,11 +148,11 @@ func TestRegistry(t *testing.T) {
 		})
 
 		api := Registry{client, url}
-		err := api.DeleteImageTag("image", "tag", "sha256sum")
+		err := api.DeleteImage("image", "tag", "sha256sum")
 		require.NoError(t, err)
 	})
 
-	t.Run("DeleteImageTag API with roundtripper should return error if StatusCode != 202", func(t *testing.T) {
+	t.Run("DeleteImage API with roundtripper should return error if StatusCode != 202", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
 			require.Equal(t, req.URL.String(), url+"/v2/image/manifests/sha256sum")
 
@@ -164,7 +164,7 @@ func TestRegistry(t *testing.T) {
 		})
 
 		api := Registry{client, url}
-		err := api.DeleteImageTag("image", "tag", "sha256sum")
+		err := api.DeleteImage("image", "tag", "sha256sum")
 		require.Error(t, err)
 	})
 }
