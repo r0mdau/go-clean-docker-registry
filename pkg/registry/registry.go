@@ -48,6 +48,15 @@ func (r *Registry) Configure(url string, insecure bool) {
 	r.BaseUrl = url
 }
 
+func (r Registry) VersionCheck() error {
+	response, err := r.Client.Get(r.BaseUrl + "/v2/")
+	defer response.Body.Close()
+	if response.StatusCode != 200 {
+		return errors.New("this docker registry does not implements the V2(.1) registry API and the client cannot proceed safely with other V2 operation")
+	}
+	return err
+}
+
 func (r Registry) ListRepositories() ([]byte, error) {
 	response, err := r.Client.Get(r.BaseUrl + "/v2/_catalog?n=5000")
 	defer response.Body.Close()

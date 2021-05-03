@@ -94,8 +94,18 @@ func configureRegistry(c *cli.Context) registry.Registry {
 	return registry
 }
 
+func verifyRegistryVersion(registry registry.Registry) {
+	err := registry.VersionCheck()
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+}
+
 func printRepositoriesList(c *cli.Context) error {
 	registry := configureRegistry(c)
+	verifyRegistryVersion(registry)
+
 	repositories, err := registry.ListRepositories()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -108,6 +118,8 @@ func printRepositoriesList(c *cli.Context) error {
 
 func printImageTagsList(c *cli.Context) error {
 	registry := configureRegistry(c)
+	verifyRegistryVersion(registry)
+
 	registryResponse, err := registry.ListImageTags(c.String("image"))
 	if err != nil {
 		fmt.Println(err.Error())
@@ -121,6 +133,8 @@ func printImageTagsList(c *cli.Context) error {
 
 func deleteImage(c *cli.Context) error {
 	registry := configureRegistry(c)
+	verifyRegistryVersion(registry)
+
 	cliImage := c.String("image")
 	cliTag := c.String("tag")
 	dryrun := c.Bool("dryrun")

@@ -82,6 +82,38 @@ func TestRegistry(t *testing.T) {
 		require.Equal(t, expectedRegistry, actualRegistry)
 	})
 
+	t.Run("API Version Check with roundtripper should return OK", func(t *testing.T) {
+		client := NewTestClient(func(req *http.Request) *http.Response {
+			require.Equal(t, req.URL.String(), url+"/v2/")
+
+			return &http.Response{
+				StatusCode: 200,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
+				Header:     make(http.Header),
+			}
+		})
+
+		api := Registry{client, url}
+		err := api.VersionCheck()
+		require.NoError(t, err)
+	})
+
+	t.Run("API Version Check with roundtripper should return KO if not V2 registry", func(t *testing.T) {
+		client := NewTestClient(func(req *http.Request) *http.Response {
+			require.Equal(t, req.URL.String(), url+"/v2/")
+
+			return &http.Response{
+				StatusCode: 404,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
+				Header:     make(http.Header),
+			}
+		})
+
+		api := Registry{client, url}
+		err := api.VersionCheck()
+		require.Error(t, err)
+	})
+
 	t.Run("ListRepositories API with roundtripper should return OK", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
 			require.Equal(t, req.URL.String(), url+"/v2/_catalog?n=5000")
@@ -96,7 +128,7 @@ func TestRegistry(t *testing.T) {
 		api := Registry{client, url}
 		body, err := api.ListRepositories()
 		require.Equal(t, []byte("OK"), body)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("ListImageTags API with roundtripper should return OK", func(t *testing.T) {
@@ -113,7 +145,7 @@ func TestRegistry(t *testing.T) {
 		api := Registry{client, url}
 		body, err := api.ListImageTags("image")
 		require.Equal(t, []byte("OK"), body.Body)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("GetExistingManifest API with roundtripper should return image hash", func(t *testing.T) {
@@ -133,7 +165,7 @@ func TestRegistry(t *testing.T) {
 		response, digest, err := api.GetExistingManifest("image", "tag")
 		require.Equal(t, 200, response.StatusCode)
 		require.Equal(t, "sha256sum", digest)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("DeleteImage API with roundtripper should return no error", func(t *testing.T) {
