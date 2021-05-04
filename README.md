@@ -60,6 +60,7 @@ make uninstall
 
 ## TODO
 - [ ] Load flags using a yaml config file
+- [ ] -o flag to output show commands in json
 - [ ] docker hub api authent (JWT) : https://hub.docker.com/support/doc/how-do-i-authenticate-with-the-v2-api
 - [ ] be satisfied with code quality and code coverage
 - [x] Makefile

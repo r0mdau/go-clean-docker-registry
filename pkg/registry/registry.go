@@ -2,32 +2,11 @@ package registry
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 )
-
-type Image struct {
-	Name string   `json:"name"`
-	Tags []string `json:"tags"`
-}
-
-type Response struct {
-	Body   []byte
-	Header http.Header
-}
-
-func (r Response) GetImage() Image {
-	var registryImage Image
-	err := json.Unmarshal(r.Body, &registryImage)
-	if err != nil {
-		fmt.Printf("- Can't deserislize tree, error: %v\n", err)
-	}
-	return registryImage
-}
 
 type Registry struct {
 	Client  *http.Client
@@ -57,31 +36,40 @@ func (r Registry) VersionCheck() error {
 	return err
 }
 
-func (r Registry) ListRepositories() ([]byte, error) {
+func (r Registry) ListRepositories() (Response, error) {
 	response, err := r.Client.Get(r.BaseUrl + "/v2/_catalog?n=5000")
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
-	return body, err
+	rResponse := NewResponse(
+		body,
+		response.Header,
+		response.StatusCode,
+	)
+	return rResponse, err
 }
 
 func (r Registry) ListImageTags(image string) (Response, error) {
 	response, err := r.Client.Get(r.BaseUrl + "/v2/" + image + "/tags/list")
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
-	registryResponse := Response{
+	rResponse := NewResponse(
 		body,
 		response.Header,
-	}
-	return registryResponse, err
+		response.StatusCode,
+	)
+	return rResponse, err
 }
 
-func (r *Registry) GetExistingManifest(image string, tag string) (*http.Response, string, error) {
+func (r *Registry) GetDigestFromManifest(image string, tag string) (string, error) {
 	request, _ := http.NewRequest("HEAD", r.BaseUrl+"/v2/"+image+"/manifests/"+tag, nil)
 	request.Header.Set("Accept", "application/vnd.docker.distribution.manifest.v2+json")
 	response, err := r.Client.Do(request)
 	digest := response.Header.Get("Docker-Content-Digest")
 	defer response.Body.Close()
-	return response, digest, err
+	if response.StatusCode != 200 {
+		err = errors.New("Error while getting digest from manifest for: " + image + ":" + tag + ", HTTP code " + strconv.Itoa(response.StatusCode))
+	}
+	return digest, err
 }
 
 func (r *Registry) DeleteImage(image, tag, digest string) error {

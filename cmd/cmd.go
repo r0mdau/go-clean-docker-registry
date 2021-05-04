@@ -2,12 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/korovkin/limiter"
 	"github.com/r0mdau/go-clean-docker-registry/internal/filter"
 	"github.com/r0mdau/go-clean-docker-registry/pkg/registry"
 	"github.com/urfave/cli/v2"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -112,7 +110,7 @@ func printRepositoriesList(c *cli.Context) error {
 		os.Exit(1)
 	}
 
-	fmt.Println(string(repositories))
+	fmt.Println(repositories.GetRepository().List)
 	return nil
 }
 
@@ -138,6 +136,7 @@ func deleteImage(c *cli.Context) error {
 	cliImage := c.String("image")
 	cliTag := c.String("tag")
 	dryrun := c.Bool("dryrun")
+	keep := c.Int("keep")
 
 	registryResponse, err := registry.ListImageTags(cliImage)
 	if err != nil {
@@ -145,38 +144,30 @@ func deleteImage(c *cli.Context) error {
 		os.Exit(1)
 	}
 
-	var tagsToDelete []string
+	tagsToDelete := registryResponse.GetImage().Tags
 	if cliTag != "" {
 		tagsToDelete, err = filter.MatchAndSortImageTags(registryResponse.GetImage().Tags, cliTag)
 		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)
 		}
-		tagsToDelete = tagsToDelete[:len(tagsToDelete)-c.Int("keep")]
-	} else {
-		tagsToDelete = registryResponse.GetImage().Tags
+		tagsToDelete = tagsToDelete[:len(tagsToDelete)-keep]
 	}
 
 	if dryrun {
-		fmt.Println("Dryrun, it should delete image : \""+cliImage+"\" with tags :", tagsToDelete)
-	} else {
-		limit := limiter.NewConcurrencyLimiter(10)
-		for _, tagToDelete := range tagsToDelete {
-			limit.Execute(func() {
-				response, digest, errGet := registry.GetExistingManifest(cliImage, tagToDelete)
-				if errGet != nil {
-					fmt.Println(errGet.Error())
-				} else if response.StatusCode == 200 {
-					errDel := registry.DeleteImage(cliImage, tagToDelete, digest)
-					if errDel != nil {
-						fmt.Println(errDel.Error())
-					}
-				} else {
-					fmt.Println("Error while getting image manifest for: " + tagToDelete + ":" + cliTag + ", HTTP code " + strconv.Itoa(response.StatusCode))
-				}
-			})
+		fmt.Println("Dryrun, it should delete image : \""+cliImage+"\" with", len(tagsToDelete), "tags :", tagsToDelete)
+		return nil
+	}
+
+	for _, tagToDelete := range tagsToDelete {
+		digest, errGet := registry.GetDigestFromManifest(cliImage, tagToDelete)
+		if errGet != nil {
+			fmt.Println(errGet.Error())
 		}
-		limit.Wait()
+		errDel := registry.DeleteImage(cliImage, tagToDelete, digest)
+		if errDel != nil {
+			fmt.Println(errDel.Error())
+		}
 	}
 	fmt.Println("Total of", len(tagsToDelete), "tags deleted.")
 	return nil

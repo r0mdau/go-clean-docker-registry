@@ -23,34 +23,12 @@ func NewTestClient(fn RoundTripFunc) *http.Client {
 
 const url = "https://example.com"
 
-func TestRegistryImage(t *testing.T) {
-	t.Run("GetImage from Response should return Image", func(t *testing.T) {
-		rResponse := Response{
-			[]byte("{\"name\":\"test\", \"tags\":[\"master-6.0.1\",\"master-6.1.0\"]}"),
-			http.Header{},
-		}
-		actualImage := rResponse.GetImage()
-		expectedImage := Image{
-			"test",
-			[]string{"master-6.0.1", "master-6.1.0"},
-		}
-
-		require.Equal(t, expectedImage, actualImage)
-	})
-
-	t.Run("GetImage from Response should return empty Image", func(t *testing.T) {
-		rResponse := Response{
-			[]byte("{}"),
-			http.Header{},
-		}
-		actualImage := rResponse.GetImage()
-		expectedImage := Image{
-			"",
-			[]string(nil),
-		}
-
-		require.Equal(t, expectedImage, actualImage)
-	})
+func getHttpResponse() *http.Response {
+	return &http.Response{
+		StatusCode: 200,
+		Body:       ioutil.NopCloser(bytes.NewBufferString("OK")),
+		Header:     make(http.Header),
+	}
 }
 
 func TestRegistry(t *testing.T) {
@@ -82,15 +60,16 @@ func TestRegistry(t *testing.T) {
 		require.Equal(t, expectedRegistry, actualRegistry)
 	})
 
-	t.Run("API Version Check with roundtripper should return OK", func(t *testing.T) {
-		client := NewTestClient(func(req *http.Request) *http.Response {
-			require.Equal(t, req.URL.String(), url+"/v2/")
+	expectedResponse := NewResponse(
+		[]byte("OK"),
+		make(http.Header),
+		200,
+	)
 
-			return &http.Response{
-				StatusCode: 200,
-				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
-				Header:     make(http.Header),
-			}
+	t.Run("API Version Check with roundtripper should return no error if v2", func(t *testing.T) {
+		client := NewTestClient(func(req *http.Request) *http.Response {
+			require.Equal(t, url+"/v2/", req.URL.String())
+			return getHttpResponse()
 		})
 
 		api := Registry{client, url}
@@ -98,9 +77,9 @@ func TestRegistry(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("API Version Check with roundtripper should return KO if not V2 registry", func(t *testing.T) {
+	t.Run("API Version Check with roundtripper should return KO if not v2", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
-			require.Equal(t, req.URL.String(), url+"/v2/")
+			require.Equal(t, url+"/v2/", req.URL.String())
 
 			return &http.Response{
 				StatusCode: 404,
@@ -116,41 +95,33 @@ func TestRegistry(t *testing.T) {
 
 	t.Run("ListRepositories API with roundtripper should return OK", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
-			require.Equal(t, req.URL.String(), url+"/v2/_catalog?n=5000")
-
-			return &http.Response{
-				StatusCode: 200,
-				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
-				Header:     make(http.Header),
-			}
+			require.Equal(t, url+"/v2/_catalog?n=5000", req.URL.String())
+			return getHttpResponse()
 		})
 
 		api := Registry{client, url}
-		body, err := api.ListRepositories()
-		require.Equal(t, []byte("OK"), body)
+		response, err := api.ListRepositories()
+
+		require.Equal(t, expectedResponse, response)
 		require.NoError(t, err)
 	})
 
 	t.Run("ListImageTags API with roundtripper should return OK", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
-			require.Equal(t, req.URL.String(), url+"/v2/image/tags/list")
-
-			return &http.Response{
-				StatusCode: 200,
-				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
-				Header:     make(http.Header),
-			}
+			require.Equal(t, url+"/v2/image/tags/list", req.URL.String())
+			return getHttpResponse()
 		})
 
 		api := Registry{client, url}
-		body, err := api.ListImageTags("image")
-		require.Equal(t, []byte("OK"), body.Body)
+		actual, err := api.ListImageTags("image")
+
+		require.Equal(t, expectedResponse, actual)
 		require.NoError(t, err)
 	})
 
-	t.Run("GetExistingManifest API with roundtripper should return image hash", func(t *testing.T) {
+	t.Run("GetDigestFromManifest API with roundtripper should return image hash", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
-			require.Equal(t, req.URL.String(), url+"/v2/image/manifests/tag")
+			require.Equal(t, url+"/v2/image/manifests/tag", req.URL.String())
 
 			header := make(http.Header)
 			header.Add("Docker-Content-Digest", "sha256sum")
@@ -162,15 +133,14 @@ func TestRegistry(t *testing.T) {
 		})
 
 		api := Registry{client, url}
-		response, digest, err := api.GetExistingManifest("image", "tag")
-		require.Equal(t, 200, response.StatusCode)
+		digest, err := api.GetDigestFromManifest("image", "tag")
 		require.Equal(t, "sha256sum", digest)
 		require.NoError(t, err)
 	})
 
 	t.Run("DeleteImage API with roundtripper should return no error", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
-			require.Equal(t, req.URL.String(), url+"/v2/image/manifests/sha256sum")
+			require.Equal(t, url+"/v2/image/manifests/sha256sum", req.URL.String())
 
 			return &http.Response{
 				StatusCode: 202,
@@ -186,13 +156,8 @@ func TestRegistry(t *testing.T) {
 
 	t.Run("DeleteImage API with roundtripper should return error if StatusCode != 202", func(t *testing.T) {
 		client := NewTestClient(func(req *http.Request) *http.Response {
-			require.Equal(t, req.URL.String(), url+"/v2/image/manifests/sha256sum")
-
-			return &http.Response{
-				StatusCode: 200,
-				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
-				Header:     make(http.Header),
-			}
+			require.Equal(t, url+"/v2/image/manifests/sha256sum", req.URL.String())
+			return getHttpResponse()
 		})
 
 		api := Registry{client, url}
