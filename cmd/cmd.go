@@ -96,10 +96,7 @@ func configureRegistry(c *cli.Context) registry.Registry {
 
 func verifyRegistryVersion(registry registry.Registry) {
 	err := registry.VersionCheck()
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
+	exit(err)
 }
 
 func printRepositoriesList(c *cli.Context) error {
@@ -107,10 +104,7 @@ func printRepositoriesList(c *cli.Context) error {
 	verifyRegistryVersion(registry)
 
 	repositories, err := registry.ListRepositories()
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
+	exit(err)
 
 	fmt.Println(repositories.GetRepository().List)
 	return nil
@@ -121,10 +115,7 @@ func printImageTagsList(c *cli.Context) error {
 	verifyRegistryVersion(registry)
 
 	registryResponse, err := registry.ListImageTags(c.String("image"))
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
+	exit(err)
 
 	fmt.Println(string(registryResponse.Body))
 	fmt.Println("Total of", len(registryResponse.GetImage().Tags), "tags.")
@@ -141,18 +132,12 @@ func deleteImage(c *cli.Context) error {
 	keep := c.Int("keep")
 
 	registryResponse, err := registry.ListImageTags(cliImage)
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
+	exit(err)
 
 	tagsToDelete := registryResponse.GetImage().Tags
 	if cliTag != "" {
 		tagsToDelete, err = filter.MatchAndSortImageTags(registryResponse.GetImage().Tags, cliTag)
-		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
-		}
+		exit(err)
 		tagsToDelete = tagsToDelete[:len(tagsToDelete)-keep]
 	}
 
@@ -184,6 +169,8 @@ func wDelete(registry registry.Registry, image string, jobs <-chan string, resul
 		digest, errGet := registry.GetDigestFromManifest(image, tag)
 		if errGet != nil {
 			fmt.Println(errGet.Error())
+			results <- tag
+			continue
 		}
 		fmt.Println("Deleting", image, ":", tag)
 		errDel := registry.DeleteImage(image, tag, digest)
@@ -191,5 +178,12 @@ func wDelete(registry registry.Registry, image string, jobs <-chan string, resul
 			fmt.Println(errDel.Error())
 		}
 		results <- tag
+	}
+}
+
+func exit(err error) {
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 }
