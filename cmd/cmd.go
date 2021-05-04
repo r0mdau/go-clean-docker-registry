@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const workers = 10
+
 func CreateApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = "go-clean-docker-registry"
@@ -159,16 +161,35 @@ func deleteImage(c *cli.Context) error {
 		return nil
 	}
 
+	numJobs := len(tagsToDelete)
+	jobs := make(chan string, numJobs)
+	results := make(chan string, numJobs)
+
+	for w := 0; w < workers; w++ {
+		go wDelete(registry, cliImage, jobs, results)
+	}
 	for _, tagToDelete := range tagsToDelete {
-		digest, errGet := registry.GetDigestFromManifest(cliImage, tagToDelete)
-		if errGet != nil {
-			fmt.Println(errGet.Error())
-		}
-		errDel := registry.DeleteImage(cliImage, tagToDelete, digest)
-		if errDel != nil {
-			fmt.Println(errDel.Error())
-		}
+		jobs <- tagToDelete
+	}
+	close(jobs)
+	for a := 0; a < numJobs; a++ {
+		<-results
 	}
 	fmt.Println("Total of", len(tagsToDelete), "tags deleted.")
 	return nil
+}
+
+func wDelete(registry registry.Registry, image string, jobs <-chan string, results chan<- string) {
+	for tag := range jobs {
+		digest, errGet := registry.GetDigestFromManifest(image, tag)
+		if errGet != nil {
+			fmt.Println(errGet.Error())
+		}
+		fmt.Println("Deleting", image, ":", tag)
+		errDel := registry.DeleteImage(image, tag, digest)
+		if errDel != nil {
+			fmt.Println(errDel.Error())
+		}
+		results <- tag
+	}
 }
