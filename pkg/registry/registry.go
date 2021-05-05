@@ -36,12 +36,6 @@ func (r Registry) VersionCheck() error {
 	return err
 }
 
-type ErrTimeout struct{}
-
-func (m *ErrTimeout) Error(msg string) string {
-	return msg
-}
-
 func (r Registry) ListRepositories(n int) (Response, error) {
 	response, err := r.Client.Get(r.BaseUrl + "/v2/_catalog?n=" + strconv.Itoa(n))
 	defer response.Body.Close()
