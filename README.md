@@ -63,15 +63,8 @@ make uninstall
 ```
 
 ## TODO
-- [ ] Load flags using a yaml config file
+- [ ] Load flags using a yaml config file, to be used as a cron
 - [ ] -o flag to output show commands in json
 - [ ] implement pagination with Link header for showimages
 - [ ] docker hub api authent (JWT) : https://hub.docker.com/support/doc/how-do-i-authenticate-with-the-v2-api
 - [ ] be satisfied with code quality and code coverage
-- [x] Makefile
-- [x] Logic for cli flags
-- [x] get images from registry
-- [x] get tags from registry
-- [x] DELETE action, if dryrun output tags to be deleted
-- [x] DELETE action, else delete docker images:tag
-- [x] folder structure with go packages
