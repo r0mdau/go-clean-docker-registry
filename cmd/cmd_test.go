@@ -20,6 +20,7 @@ func TestInitCmdAppConfiguration(t *testing.T) {
 func TestCommandShowimagesAppValues(t *testing.T) {
 	var registyUrl string
 	var insecure bool
+	var number int
 
 	t.Run("Showimages test flags default secure", func(t *testing.T) {
 		app := newTestApp()
@@ -37,18 +38,20 @@ func TestCommandShowimagesAppValues(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("Showimages test flags insecure", func(t *testing.T) {
+	t.Run("Showimages test maximum flags", func(t *testing.T) {
 		app := newTestApp()
 		app.Commands[0].Action = func(c *cli.Context) error {
 			registyUrl = c.String("url")
 			insecure = c.Bool("insecure")
+			number = c.Int("n")
 			return nil
 		}
 
-		err := app.Run([]string{"", "showimages", "--url", "https://example.com", "--insecure"})
+		err := app.Run([]string{"", "showimages", "--url", "https://example.com", "--insecure", "-n", "125"})
 
 		require.Equal(t, "https://example.com", registyUrl)
 		require.Equal(t, true, insecure)
+		require.Equal(t, 125, number)
 		require.NoError(t, err)
 	})
 }

@@ -112,7 +112,8 @@ func printRepositoriesList(c *cli.Context) error {
 	repositories, err := registry.ListRepositories(c.Int("n"))
 	exit(err)
 
-	fmt.Println(repositories.GetRepository().List)
+	fmt.Println(string(repositories.Body))
+	fmt.Println("Total of", len(repositories.GetRepository().List), "repositories.")
 	return nil
 }
 
@@ -120,11 +121,11 @@ func printImageTagsList(c *cli.Context) error {
 	registry := configureRegistry(c)
 	verifyRegistryVersion(registry)
 
-	registryResponse, err := registry.ListImageTags(c.String("image"))
+	imageTags, err := registry.ListImageTags(c.String("image"))
 	exit(err)
 
-	fmt.Println(string(registryResponse.Body))
-	fmt.Println("Total of", len(registryResponse.GetImage().Tags), "tags.")
+	fmt.Println(string(imageTags.Body))
+	fmt.Println("Total of", len(imageTags.GetImage().Tags), "tags.")
 	return nil
 }
 
