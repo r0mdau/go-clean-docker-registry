@@ -1,7 +1,6 @@
 package filter
 
 import (
-	"fmt"
 	"github.com/hashicorp/go-version"
 	"regexp"
 	"sort"
@@ -19,7 +18,7 @@ func MatchAndSortImageTags(tags []string, imageTag string) ([]string, error) {
 
 	for _, tag := range tags {
 		if tag == imageTag && tagWildcard != "*" {
-			imageTagsToDelete = append(imageTagsToDelete, imageTag)
+			imageTagsToDelete = append(imageTagsToDelete, tag)
 			return imageTagsToDelete, nil
 		}
 
@@ -28,7 +27,9 @@ func MatchAndSortImageTags(tags []string, imageTag string) ([]string, error) {
 
 			v, err := version.NewVersion(identifier)
 			if err != nil {
-				fmt.Println(imageTag + " " + tag + " : not a good version number from * wildcard")
+				// appending matching tags not semver(sioned)
+				imageTagsToDelete = append(imageTagsToDelete, tag)
+				continue
 			}
 			versions = append(versions, v)
 			mapping[v.String()] = tag
