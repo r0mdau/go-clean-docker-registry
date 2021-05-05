@@ -42,6 +42,11 @@ func CreateApp() *cli.App {
 		Value:   0,
 		Usage:   "Number of tags to keep, to combine with -t",
 	}
+	numberFlag := &cli.IntFlag{
+		Name:  "n",
+		Value: 5000,
+		Usage: "Number of images to retrieve",
+	}
 	dryrunFlag := &cli.BoolFlag{
 		Name:  "dryrun",
 		Usage: "Dryrun only print future delete actions",
@@ -58,6 +63,7 @@ func CreateApp() *cli.App {
 			Action: printRepositoriesList,
 			Flags: []cli.Flag{
 				urlFlag,
+				numberFlag,
 				insecureFlag,
 			},
 		}, {
@@ -103,7 +109,7 @@ func printRepositoriesList(c *cli.Context) error {
 	registry := configureRegistry(c)
 	verifyRegistryVersion(registry)
 
-	repositories, err := registry.ListRepositories()
+	repositories, err := registry.ListRepositories(c.Int("n"))
 	exit(err)
 
 	fmt.Println(repositories.GetRepository().List)

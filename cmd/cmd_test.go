@@ -112,7 +112,7 @@ func TestCommandShowimagesRequiredFlagAppRunBehavior(t *testing.T) {
 		},
 		{
 			testCase:        "valid_case_with_maximum_required_flag_on_command_showimages",
-			appRunInput:     []string{"myCLI", "showimages", "--url", "http://localhost", "--insecure"},
+			appRunInput:     []string{"myCLI", "showimages", "--url", "http://localhost", "--insecure", "-n", "199"},
 			expectedAnError: false,
 		},
 		{

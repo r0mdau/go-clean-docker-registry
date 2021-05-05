@@ -100,7 +100,7 @@ func TestRegistry(t *testing.T) {
 		})
 
 		api := Registry{client, url}
-		response, err := api.ListRepositories()
+		response, err := api.ListRepositories(5000)
 
 		require.Equal(t, expectedResponse, response)
 		require.NoError(t, err)

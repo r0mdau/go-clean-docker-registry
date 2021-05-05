@@ -31,6 +31,10 @@ Show all images in the registry :
     # or
     go-clean-docker-registry showimages -u https://registry.docker.example.com
 
+If previous timeout, show first 100 images in the registry :
+
+    go-clean-docker-registry showimages -u https://registry.docker.example.com -n 100
+
 Show all tags of specified image :
 
     go-clean-docker-registry showtags -u https://registry.docker.example.com -i r0mdau/nodejs
@@ -61,6 +65,7 @@ make uninstall
 ## TODO
 - [ ] Load flags using a yaml config file
 - [ ] -o flag to output show commands in json
+- [ ] implement pagination with Link header for showimages
 - [ ] docker hub api authent (JWT) : https://hub.docker.com/support/doc/how-do-i-authenticate-with-the-v2-api
 - [ ] be satisfied with code quality and code coverage
 - [x] Makefile

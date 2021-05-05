@@ -36,8 +36,14 @@ func (r Registry) VersionCheck() error {
 	return err
 }
 
-func (r Registry) ListRepositories() (Response, error) {
-	response, err := r.Client.Get(r.BaseUrl + "/v2/_catalog?n=5000")
+type ErrTimeout struct{}
+
+func (m *ErrTimeout) Error(msg string) string {
+	return msg
+}
+
+func (r Registry) ListRepositories(n int) (Response, error) {
+	response, err := r.Client.Get(r.BaseUrl + "/v2/_catalog?n=" + strconv.Itoa(n))
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	rResponse := NewResponse(
@@ -45,6 +51,9 @@ func (r Registry) ListRepositories() (Response, error) {
 		response.Header,
 		response.StatusCode,
 	)
+	if response.StatusCode == http.StatusGatewayTimeout {
+		err = errors.New(strconv.Itoa(http.StatusGatewayTimeout) + " timeout, you should retry by specifying -n parameter to limit the number of returned elements")
+	}
 	return rResponse, err
 }
 
