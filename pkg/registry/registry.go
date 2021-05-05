@@ -30,7 +30,7 @@ func (r *Registry) Configure(url string, insecure bool) {
 func (r Registry) VersionCheck() error {
 	response, err := r.Client.Get(r.BaseUrl + "/v2/")
 	defer response.Body.Close()
-	if response.StatusCode != 200 {
+	if response.StatusCode != http.StatusOK {
 		return errors.New("this docker registry does not implements the V2(.1) registry API and the client cannot proceed safely with other V2 operation")
 	}
 	return err
@@ -75,7 +75,7 @@ func (r *Registry) GetDigestFromManifest(image string, tag string) (string, erro
 	response, err := r.Client.Do(request)
 	digest := response.Header.Get("Docker-Content-Digest")
 	defer response.Body.Close()
-	if response.StatusCode != 200 {
+	if response.StatusCode != http.StatusOK {
 		err = errors.New("Error while getting digest from manifest for: " + image + ":" + tag + ", HTTP code " + strconv.Itoa(response.StatusCode))
 	}
 	return digest, err
@@ -85,7 +85,7 @@ func (r *Registry) DeleteImage(image, tag, digest string) error {
 	request, _ := http.NewRequest("DELETE", r.BaseUrl+"/v2/"+image+"/manifests/"+digest, nil)
 	res, err := r.Client.Do(request)
 	defer res.Body.Close()
-	if res.StatusCode != 202 {
+	if res.StatusCode != http.StatusAccepted {
 		return errors.New("Error while deleting image:tag : " + image + ":" + tag + " HTTP code " + strconv.Itoa(res.StatusCode))
 	}
 	return err

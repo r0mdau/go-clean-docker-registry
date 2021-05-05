@@ -25,7 +25,7 @@ const url = "https://example.com"
 
 func getHttpResponse() *http.Response {
 	return &http.Response{
-		StatusCode: 200,
+		StatusCode: http.StatusOK,
 		Body:       ioutil.NopCloser(bytes.NewBufferString("OK")),
 		Header:     make(http.Header),
 	}
@@ -63,7 +63,7 @@ func TestRegistry(t *testing.T) {
 	expectedResponse := NewResponse(
 		[]byte("OK"),
 		make(http.Header),
-		200,
+		http.StatusOK,
 	)
 
 	t.Run("API Version Check with roundtripper should return no error if v2", func(t *testing.T) {
@@ -82,7 +82,7 @@ func TestRegistry(t *testing.T) {
 			require.Equal(t, url+"/v2/", req.URL.String())
 
 			return &http.Response{
-				StatusCode: 404,
+				StatusCode: http.StatusNotFound,
 				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
 				Header:     make(http.Header),
 			}
@@ -126,7 +126,7 @@ func TestRegistry(t *testing.T) {
 			header := make(http.Header)
 			header.Add("Docker-Content-Digest", "sha256sum")
 			return &http.Response{
-				StatusCode: 200,
+				StatusCode: http.StatusOK,
 				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
 				Header:     header,
 			}
@@ -143,7 +143,7 @@ func TestRegistry(t *testing.T) {
 			require.Equal(t, url+"/v2/image/manifests/sha256sum", req.URL.String())
 
 			return &http.Response{
-				StatusCode: 202,
+				StatusCode: http.StatusAccepted,
 				Body:       ioutil.NopCloser(bytes.NewBufferString(`OK`)),
 				Header:     make(http.Header),
 			}
