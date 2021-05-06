@@ -5,7 +5,7 @@ import (
 	"github.com/r0mdau/go-clean-docker-registry/internal/filter"
 	"github.com/r0mdau/go-clean-docker-registry/pkg/registry"
 	"github.com/urfave/cli/v2"
-	"os"
+	"log"
 	"time"
 )
 
@@ -190,7 +190,6 @@ func wDelete(registry registry.Registry, image string, jobs <-chan string, resul
 
 func exit(err error) {
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }

@@ -11,6 +11,5 @@ func main() {
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
-		os.Exit(1)
 	}
 }
