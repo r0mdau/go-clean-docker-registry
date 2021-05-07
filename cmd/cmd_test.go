@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"flag"
-	"github.com/r0mdau/go-clean-docker-registry/pkg/registry"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
 	"io/ioutil"
@@ -259,34 +257,6 @@ func assertAppBehaviour(t *testing.T, tdata []struct {
 			}
 		})
 	}
-}
-
-func TestConfigureRegistry(t *testing.T) {
-	t.Run("TODO Cannot set cli.flagSet so configure registry return empty registry", func(t *testing.T) {
-		app := &cli.App{Writer: ioutil.Discard}
-		set := flag.NewFlagSet("test", 0)
-		testArgs := []string{"", "showimages", "--url", "https://example.com"}
-		set.Parse(testArgs)
-		context := cli.NewContext(app, set, nil)
-
-		command := cli.Command{
-			Name:            "showimages",
-			Usage:           "this is for testing",
-			Description:     "testing",
-			Action:          func(_ *cli.Context) error { return nil },
-			SkipFlagParsing: true,
-		}
-
-		command.Run(context)
-
-		actualRegistry := configureRegistry(context)
-
-		expectedRegistry := registry.Registry{}
-		expectedRegistry.Configure("", false)
-
-		require.Equal(t, expectedRegistry.BaseUrl, actualRegistry.BaseUrl)
-		require.Equal(t, "todo", "todo")
-	})
 }
 
 func newTestApp() *cli.App {

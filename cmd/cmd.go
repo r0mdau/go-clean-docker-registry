@@ -34,7 +34,7 @@ func CreateApp() *cli.App {
 	tagFlag := &cli.StringFlag{
 		Name:    "tag",
 		Aliases: []string{"t"},
-		Usage:   "Image version tag to delete, regex possible ie \"master-.*\"",
+		Usage:   "Image version tag to delete, regex possible ie \"master-*\", priority for semver",
 	}
 	keepFlag := &cli.IntFlag{
 		Name:    "keep",
@@ -94,31 +94,25 @@ func CreateApp() *cli.App {
 	return app
 }
 
-func configureRegistry(c *cli.Context) registry.Registry {
-	registry := registry.Registry{}
-	registry.Configure(c.String("url"), c.Bool("insecure"))
-	return registry
-}
-
 func verifyRegistryVersion(registry registry.Registry) {
 	err := registry.VersionCheck()
 	exit(err)
 }
 
 func printRepositoriesList(c *cli.Context) error {
-	registry := configureRegistry(c)
+	registry := registry.NewRegistry(c.String("url"), c.Bool("insecure"))
 	verifyRegistryVersion(registry)
 
 	repositories, err := registry.ListRepositories(c.Int("n"))
 	exit(err)
 
-	fmt.Println(string(repositories.Body))
+	fmt.Printf(string(repositories.Body))
 	fmt.Println("Total of", len(repositories.GetRepository().List), "repositories.")
 	return nil
 }
 
 func printImageTagsList(c *cli.Context) error {
-	registry := configureRegistry(c)
+	registry := registry.NewRegistry(c.String("url"), c.Bool("insecure"))
 	verifyRegistryVersion(registry)
 
 	imageTags, err := registry.ListImageTags(c.String("image"))
@@ -130,7 +124,7 @@ func printImageTagsList(c *cli.Context) error {
 }
 
 func deleteImage(c *cli.Context) error {
-	registry := configureRegistry(c)
+	registry := registry.NewRegistry(c.String("url"), c.Bool("insecure"))
 	verifyRegistryVersion(registry)
 
 	cliImage := c.String("image")

@@ -32,18 +32,17 @@ func getHttpResponse() *http.Response {
 }
 
 func TestRegistry(t *testing.T) {
-	t.Run("Configure Registry secure (default) configuration", func(t *testing.T) {
+	t.Run("NewRegistry secure (default) configuration", func(t *testing.T) {
 		client := &http.Client{}
 		expectedRegistry := Registry{
 			client,
 			url,
 		}
-		actualRegistry := Registry{}
-		actualRegistry.Configure(url, false)
+		actualRegistry := NewRegistry(url, false)
 		require.Equal(t, expectedRegistry, actualRegistry)
 	})
 
-	t.Run("Configure Registry insecure configuration", func(t *testing.T) {
+	t.Run("NewRegistry insecure configuration", func(t *testing.T) {
 		client := &http.Client{}
 		transport := &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -55,8 +54,7 @@ func TestRegistry(t *testing.T) {
 			client,
 			url,
 		}
-		actualRegistry := Registry{}
-		actualRegistry.Configure(url, true)
+		actualRegistry := NewRegistry(url, true)
 		require.Equal(t, expectedRegistry, actualRegistry)
 	})
 

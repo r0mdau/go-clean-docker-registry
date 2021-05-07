@@ -14,7 +14,7 @@ type Registry struct {
 	BaseUrl string
 }
 
-func (r *Registry) Configure(url string, insecure bool) {
+func NewRegistry(url string, insecure bool) Registry {
 	client := &http.Client{}
 	if insecure {
 		transport := &http.Transport{
@@ -24,8 +24,10 @@ func (r *Registry) Configure(url string, insecure bool) {
 		}
 		client.Transport = transport
 	}
-	r.Client = client
-	r.BaseUrl = url
+	return Registry{
+		Client:  client,
+		BaseUrl: url,
+	}
 }
 
 func (r Registry) VersionCheck() error {
