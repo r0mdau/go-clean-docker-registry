@@ -29,7 +29,7 @@ func NewResponse(body []byte, header http.Header, status int) Response {
 		Body:       body,
 		Header:     header,
 		StatusCode: status,
-		Writer:     os.Stdout,
+		Writer:     os.Stderr,
 	}
 }
 

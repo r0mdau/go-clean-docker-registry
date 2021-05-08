@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/r0mdau/go-clean-docker-registry/internal/filter"
 	"github.com/r0mdau/go-clean-docker-registry/pkg/registry"
 	"github.com/urfave/cli/v2"
 	"log"
+	"os"
 	"time"
 )
 
@@ -106,8 +108,8 @@ func printRepositoriesList(c *cli.Context) error {
 	repositories, err := registry.ListRepositories(c.Int("n"))
 	exit(err)
 
-	fmt.Printf(string(repositories.Body))
-	fmt.Println("Total of", len(repositories.GetRepository().List), "repositories.")
+	fmt.Println(string(repositories.Body))
+	fmt.Fprintf(os.Stderr, "Total of %d repositories.", len(repositories.GetRepository().List))
 	return nil
 }
 
@@ -119,7 +121,7 @@ func printImageTagsList(c *cli.Context) error {
 	exit(err)
 
 	fmt.Println(string(imageTags.Body))
-	fmt.Println("Total of", len(imageTags.GetImage().Tags), "tags.")
+	fmt.Fprintf(os.Stderr, "Total of %d tags.", len(imageTags.GetImage().Tags))
 	return nil
 }
 
@@ -143,7 +145,9 @@ func deleteImage(c *cli.Context) error {
 	}
 
 	if dryrun {
-		fmt.Println("Dryrun, it should delete image : \""+cliImage+"\" with", len(tagsToDelete), "tags :", tagsToDelete)
+		output, _ := json.Marshal(tagsToDelete)
+		fmt.Println(string(output))
+		fmt.Fprintf(os.Stderr, "Dryrun, it should delete image : \"%s\" with %d tags", cliImage, len(tagsToDelete))
 		return nil
 	}
 
@@ -161,7 +165,7 @@ func deleteImage(c *cli.Context) error {
 	for a := 0; a < numJobs; a++ {
 		<-results
 	}
-	fmt.Println("Total of", len(tagsToDelete), "tags deleted.")
+	fmt.Fprintf(os.Stderr, "Total of %d tags deleted.", len(tagsToDelete))
 	return nil
 }
 
@@ -169,14 +173,14 @@ func wDelete(registry registry.Registry, image string, jobs <-chan string, resul
 	for tag := range jobs {
 		digest, errGet := registry.GetDigestFromManifest(image, tag)
 		if errGet != nil {
-			fmt.Println(errGet.Error())
+			fmt.Fprintf(os.Stderr, "%s", errGet.Error())
 			results <- tag
 			continue
 		}
-		fmt.Println("Deleting", image, ":", tag)
+		fmt.Fprintf(os.Stderr, "Deleting %s:%s", image, tag)
 		errDel := registry.DeleteImage(image, tag, digest)
 		if errDel != nil {
-			fmt.Println(errDel.Error())
+			fmt.Fprintf(os.Stderr, "%s", errGet.Error())
 		}
 		results <- tag
 	}

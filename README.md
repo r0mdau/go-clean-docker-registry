@@ -67,7 +67,7 @@ make uninstall
 - [ ] implement pagination with Link header for showimages
 - [ ] docker hub api authent (JWT) : https://hub.docker.com/support/doc/how-do-i-authenticate-with-the-v2-api
 - [ ] be satisfied with code quality and code coverage
-- [ ] redirect all non essential / scriptable output to stderr
-- [ ] make all stdout information scriptable, aka json output
+- [x] redirect all non essential / scriptable output to stderr
+- [x] make all stdout information scriptable, aka json output
 - [ ] add confirmation before delete
 - [ ] add timeouts for http.Client calls
