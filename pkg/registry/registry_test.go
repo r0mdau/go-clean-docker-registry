@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 )
 
 type RoundTripFunc func(req *http.Request) *http.Response
@@ -33,7 +34,9 @@ func getHttpResponse() *http.Response {
 
 func TestRegistry(t *testing.T) {
 	t.Run("NewRegistry secure (default) configuration", func(t *testing.T) {
-		client := &http.Client{}
+		client := &http.Client{
+			Timeout: 30 * time.Second,
+		}
 		expectedRegistry := Registry{
 			client,
 			url,
@@ -43,7 +46,9 @@ func TestRegistry(t *testing.T) {
 	})
 
 	t.Run("NewRegistry insecure configuration", func(t *testing.T) {
-		client := &http.Client{}
+		client := &http.Client{
+			Timeout: 30 * time.Second,
+		}
 		transport := &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,

@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type Registry struct {
@@ -15,7 +16,9 @@ type Registry struct {
 }
 
 func NewRegistry(url string, insecure bool) Registry {
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 	if insecure {
 		transport := &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -32,15 +35,21 @@ func NewRegistry(url string, insecure bool) Registry {
 
 func (r Registry) VersionCheck() error {
 	response, err := r.Client.Get(r.BaseUrl + "/v2/")
+	if err != nil {
+		return err
+	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
 		return r.httpErr(response, "this docker registry does not implements the V2(.1) registry API and the client cannot proceed safely with other V2 operation")
 	}
-	return err
+	return nil
 }
 
 func (r Registry) ListRepositories(n int) (Response, error) {
 	response, err := r.Client.Get(r.BaseUrl + "/v2/_catalog?n=" + strconv.Itoa(n))
+	if err != nil {
+		return Response{}, err
+	}
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	rResponse := NewResponse(
@@ -56,6 +65,9 @@ func (r Registry) ListRepositories(n int) (Response, error) {
 
 func (r Registry) ListImageTags(image string) (Response, error) {
 	response, err := r.Client.Get(r.BaseUrl + "/v2/" + image + "/tags/list")
+	if err != nil {
+		return Response{}, err
+	}
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	rResponse := NewResponse(
@@ -70,6 +82,9 @@ func (r Registry) GetDigestFromManifest(image string, tag string) (string, error
 	request, _ := http.NewRequest("HEAD", r.BaseUrl+"/v2/"+image+"/manifests/"+tag, nil)
 	request.Header.Set("Accept", "application/vnd.docker.distribution.manifest.v2+json")
 	response, err := r.Client.Do(request)
+	if err != nil {
+		return "", err
+	}
 	digest := response.Header.Get("Docker-Content-Digest")
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
@@ -81,11 +96,14 @@ func (r Registry) GetDigestFromManifest(image string, tag string) (string, error
 func (r Registry) DeleteImage(image, tag, digest string) error {
 	request, _ := http.NewRequest("DELETE", r.BaseUrl+"/v2/"+image+"/manifests/"+digest, nil)
 	response, err := r.Client.Do(request)
+	if err != nil {
+		return err
+	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusAccepted {
 		return r.httpErr(response, "Error while deleting image:tag : "+image+":"+tag)
 	}
-	return err
+	return nil
 }
 
 func (r Registry) httpErr(response *http.Response, message string) error {

@@ -67,4 +67,4 @@ make uninstall
 - [ ] implement pagination with Link header for showimages
 - [ ] be satisfied with code quality and code coverage
 - [x] add confirmation before delete
-- [ ] add timeouts for http.Client calls
+- [x] add timeouts for http.Client calls
