@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"github.com/r0mdau/go-clean-docker-registry/internal/filter"
@@ -8,6 +9,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -109,7 +111,7 @@ func printRepositoriesList(c *cli.Context) error {
 	exit(err)
 
 	fmt.Println(string(repositories.Body))
-	fmt.Fprintf(os.Stderr, "Total of %d repositories.", len(repositories.GetRepository().List))
+	fmt.Fprintf(os.Stderr, "Total of %d repositories.\n", len(repositories.GetRepository().List))
 	return nil
 }
 
@@ -121,7 +123,7 @@ func printImageTagsList(c *cli.Context) error {
 	exit(err)
 
 	fmt.Println(string(imageTags.Body))
-	fmt.Fprintf(os.Stderr, "Total of %d tags.", len(imageTags.GetImage().Tags))
+	fmt.Fprintf(os.Stderr, "Total of %d tags.\n", len(imageTags.GetImage().Tags))
 	return nil
 }
 
@@ -147,25 +149,27 @@ func deleteImage(c *cli.Context) error {
 	if dryrun {
 		output, _ := json.Marshal(tagsToDelete)
 		fmt.Println(string(output))
-		fmt.Fprintf(os.Stderr, "Dryrun, it should delete image : \"%s\" with %d tags", cliImage, len(tagsToDelete))
+		fmt.Fprintf(os.Stderr, "Dryrun, it should delete image : \"%s\" with %d tags.\n", cliImage, len(tagsToDelete))
 		return nil
 	}
 
-	numJobs := len(tagsToDelete)
-	jobs := make(chan string, numJobs)
-	results := make(chan string, numJobs)
+	if confirm("Are you sure to delete these tags ? (maybe try --dryrun first)") {
+		numJobs := len(tagsToDelete)
+		jobs := make(chan string, numJobs)
+		results := make(chan string, numJobs)
 
-	for w := 0; w < workers; w++ {
-		go wDelete(registry, cliImage, jobs, results)
+		for w := 0; w < workers; w++ {
+			go wDelete(registry, cliImage, jobs, results)
+		}
+		for _, tagToDelete := range tagsToDelete {
+			jobs <- tagToDelete
+		}
+		close(jobs)
+		for a := 0; a < numJobs; a++ {
+			<-results
+		}
+		fmt.Fprintf(os.Stderr, "Total of %d tags deleted.\n", len(tagsToDelete))
 	}
-	for _, tagToDelete := range tagsToDelete {
-		jobs <- tagToDelete
-	}
-	close(jobs)
-	for a := 0; a < numJobs; a++ {
-		<-results
-	}
-	fmt.Fprintf(os.Stderr, "Total of %d tags deleted.", len(tagsToDelete))
 	return nil
 }
 
@@ -173,16 +177,34 @@ func wDelete(registry registry.Registry, image string, jobs <-chan string, resul
 	for tag := range jobs {
 		digest, errGet := registry.GetDigestFromManifest(image, tag)
 		if errGet != nil {
-			fmt.Fprintf(os.Stderr, "%s", errGet.Error())
+			fmt.Fprintf(os.Stderr, "%s\n", errGet.Error())
 			results <- tag
 			continue
 		}
-		fmt.Fprintf(os.Stderr, "Deleting %s:%s", image, tag)
+		fmt.Fprintf(os.Stderr, "Deleting %s:%s\n", image, tag)
 		errDel := registry.DeleteImage(image, tag, digest)
 		if errDel != nil {
-			fmt.Fprintf(os.Stderr, "%s", errGet.Error())
+			fmt.Fprintf(os.Stderr, "%s\n", errGet.Error())
 		}
 		results <- tag
+	}
+}
+
+func confirm(s string) bool {
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Printf("%s [y/n]: ", s)
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			log.Fatal(err)
+		}
+		response = strings.ToLower(strings.TrimSpace(response))
+		if response == "y" || response == "yes" {
+			return true
+		}
+		fmt.Fprintf(os.Stderr, "Canceled.\n")
+		return false
 	}
 }
 
