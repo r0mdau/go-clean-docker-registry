@@ -1,6 +1,7 @@
 go-clean-docker-registry
 ========================
 
+[![Go](https://github.com/r0mdau/go-clean-docker-registry/actions/workflows/go.yml/badge.svg)](https://github.com/r0mdau/go-clean-docker-registry/actions/workflows/go.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/r0mdau/go-clean-docker-registry)](https://goreportcard.com/report/github.com/r0mdau/go-clean-docker-registry)
 
 Super simple cli tool written in Go to clean your v2 docker registry.
